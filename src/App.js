@@ -1,76 +1,101 @@
-import React from 'react'
+import React, { PropTypes } from 'react'
 import {
   BrowserRouter as Router,
   Route,
-  Link
+  Link,
+  Redirect,
+  withRouter
 } from 'react-router-dom'
 
-const BasicExample = () => (
+////////////////////////////////////////////////////////////
+// 1. Click the public page
+// 2. Click the protected page
+// 3. Log in
+// 4. Click the back button, note the URL each time
+
+const AuthExample = () => (
   <Router>
     <div>
+      <AuthButton/>
       <ul>
-        <li><Link to="/">首页</Link></li>
-        <li><Link to="/about">关于</Link></li>
-        <li><Link to="/topics">主题列表</Link></li>
+        <li><Link to="/public">Public Page</Link></li>
+        <li><Link to="/protected">Protected Page</Link></li>
       </ul>
-
-      <hr/>
-
-      <Route exact path="/" component={Home}/>
-      <Route path="/about" component={About}/>
-      <Route path="/topics" component={Topics}/>
+      <Route path="/public" component={Public}/>
+      <Route path="/login" component={Login}/>
+      <PrivateRoute path="/protected" component={Protected}/>
     </div>
   </Router>
 )
 
-const Home = () => (
-  <div>
-    <h2>首页</h2>
-  </div>
+const fakeAuth = {
+  isAuthenticated: false,
+  authenticate(cb) {
+    this.isAuthenticated = true
+    setTimeout(cb, 100) // fake async
+  },
+  signout(cb) {
+    this.isAuthenticated = false
+    setTimeout(cb, 100)
+  }
+}
+
+const AuthButton = withRouter(({ history }) => (
+  fakeAuth.isAuthenticated ? (
+    <p>
+      Welcome! <button onClick={() => {
+        fakeAuth.signout(() => history.push('/'))
+      }}>Sign out</button>
+    </p>
+  ) : (
+    <p>You are not logged in.</p>
+  )
+))
+
+const PrivateRoute = ({ component: Component, ...rest }) => (
+  <Route {...rest} render={props => (
+    fakeAuth.isAuthenticated ? (
+      <Component {...props}/>
+    ) : (
+      <Redirect to={{
+        pathname: '/login',
+        state: { from: props.location }
+      }}/>
+    )
+  )}/>
 )
 
-const About = () => (
-  <div>
-    <h2>关于</h2>
-  </div>
-)
+const Public = () => <h3>Public</h3>
+const Protected = () => <h3>Protected</h3>
 
-const Topics = ({ match }) => (
-  <div>
-    <h2>主题列表</h2>
-    <ul>
-      <li>
-        <Link to={`${match.url}/rendering`}>
-          使用 React 渲染
-        </Link>
-      </li>
-      <li>
-        <Link to={`${match.url}/components`}>
-          组件
-        </Link>
-      </li>
-      <li>
-        <Link to={`${match.url}/props-v-state`}>
-          属性 v. 状态
-        </Link>
-      </li>
-    </ul>
+class Login extends React.Component {
+  state = {
+    redirectToReferrer: false
+  }
 
-    /**
-     * 路由进行了嵌套，并且使用exact精确匹配路由
-     */
+  login = () => {
+    fakeAuth.authenticate(() => {
+      this.setState({ redirectToReferrer: true })
+    })
+  }
 
-    <Route path={`${match.url}/:topicId`} component={Topic}/>
-    <Route exact path={match.url} render={() => (
-      <h3>请选择一个主题。</h3>
-    )}/>
-  </div>
-)
+  render() {
+    const { from } = this.props.location.state || { from: { pathname: '/' } }
+    const { redirectToReferrer } = this.state
+    
+    if (redirectToReferrer) {
+      return (
+        <Redirect to={from}/>
+      )
+    }
+    
+    return (
+      <div>
+        <p>You must log in to view the page at {from.pathname}</p>
+        <button onClick={this.login}>Log in</button>
+      </div>
+    )
+  }
+}
 
-const Topic = ({ match }) => (
-  <div>
-    <h3>{match.params.topicId}</h3>
-  </div>
-)
-
-export default BasicExample
+export default AuthExample
