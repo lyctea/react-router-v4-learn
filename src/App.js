@@ -14,19 +14,48 @@ const PrimaryLayout = () => (
         <main>
             <Switch>
                 <Route path="/" exact component={HomePage} />
-                <Route path="/users" component={UsersPage} />
-                <Route path="/users/add" component={UserAddPage} />
+                <Route path="/users" component={UserSubLayout} />
+                <Route path="/products" component={ProductSubLayout} />
                 <Redirect to="/" />
             </Switch>
         </main>
     </div>
 );
 
-const HomePage = () => <div>Home Page</div>;
-const UsersPage = () => <div>Users Page</div>;
-const UsersMenu = () => <div>UsersMenuUsersMenu</div>;
-const PrimaryHeader = () => <div>==============</div>;
-const UserAddPage = () => <div>UserAddPage</div>;
+const UserSubLayout = () => (
+    <div className="user-sub-layout">
+        <aside>
+            <UserNav />
+        </aside>
+        <div className="primary-content">
+            <Switch>
+                <Route path="/users" exact component={BrowseUsersPage} />
+                <Route path="/users/:userId" component={UserProfilePage} />
+            </Switch>
+        </div>
+    </div>
+);
+
+const UserSubLayout = props => (
+    <div className="user-sub-layout">
+        <aside>
+            <UserNav />
+        </aside>
+        <div className="primary-content">
+            <Switch>
+                <Route
+                    path={props.match.path}
+                    exact
+                    component={BrowseUsersPage}
+                />
+                <Route
+                    path={`${props.match.path}/:userId`}
+                    component={UserProfilePage}
+                />
+            </Switch>
+        </div>
+    </div>
+);
 
 const App = () => (
     <BrowserRouter>
